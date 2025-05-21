@@ -9,6 +9,8 @@ use crate::error::{Result, WebError};
 const IMAGE_VERT: &str = include_str!("shaders/vert.glsl");
 const IMAGE_FRAG: &str = include_str!("shaders/frag.glsl");
 
+// Enum para definir modos de renderizado, con valor por defecto None.
+// Aca podes agregar mas modos y luego agregarlos en el fragment shader (frag.glsl).
 #[derive(Clone, Copy, Default)]
 pub enum RenderMode {
     #[default]
@@ -25,12 +27,14 @@ impl RenderMode {
     }
 }
 
+// Imagen cargada una sola vez al inicio.
 static IMAGE: Lazy<RgbImage> = Lazy::new(|| {
     load_from_memory(include_bytes!("images/ferris.png"))
         .expect("failed to decode image")
         .to_rgb8()
 });
 
+// Posiciones de vértices para un rectángulo que cubre la pantalla (dos triángulos).
 static BOX_POSITIONS: &[f32; 12] = &[0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0];
 
 fn compile_webgl_shader(
@@ -83,6 +87,7 @@ fn link_webgl_program(
     }
 }
 
+// Configura el buffer de posición de vértices para el rectángulo.
 fn box_vertex_position(gl: &WebGlRenderingContext, program: &WebGlProgram) -> Result<u32> {
     let position_buffer = gl.create_buffer().ok_or(WebError::CreateBuffer)?;
     gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&position_buffer));
@@ -105,6 +110,7 @@ fn box_vertex_position(gl: &WebGlRenderingContext, program: &WebGlProgram) -> Re
     Ok(a_position)
 }
 
+// Obtiene el elemento canvas HTML por su ID.
 fn get_canvas(element_id: &str) -> Result<HtmlCanvasElement> {
     let document = web_sys::window()
         .expect("Could not get Window object.")
@@ -130,6 +136,7 @@ pub struct Graphics {
 }
 
 impl Graphics {
+    // Crea una instancia de Graphics obteniendo contexto WebGL, compilando shaders y creando programa.
     pub fn new(element_id: &str) -> Result<Self> {
         let canvas = get_canvas(element_id)?;
 
@@ -142,9 +149,14 @@ impl Graphics {
             .dyn_into::<WebGlRenderingContext>()
             .map_err(WebError::GetCanvasWebglHandle)?;
 
+        // El vertex shader es un programa que se ejecuta para cada vértice del modelo 3D o geometría.
+        // Su función principal es calcular la posición final de cada vértice en coordenadas de pantalla (clip space),
+        // y puede pasar datos a los fragment shaders, como colores o coordenadas de textura.
         let vert_shader =
             compile_webgl_shader(&gl, WebGlRenderingContext::VERTEX_SHADER, IMAGE_VERT)?;
 
+        // El fragment shader es un programa que se ejecuta para cada fragmento (potencial píxel) generado por la rasterización de los triángulos.
+        // Su función es calcular el color final de cada píxel, incluyendo efectos de luz, textura, transparencia, etc.
         let frag_shader =
             compile_webgl_shader(&gl, WebGlRenderingContext::FRAGMENT_SHADER, IMAGE_FRAG)?;
 
@@ -157,9 +169,11 @@ impl Graphics {
         })
     }
 
+    // Método para dibujar a Ferris usando WebGL.
     pub fn draw(&self, mode: RenderMode) -> Result<()> {
         self.gl.use_program(Some(&self.program));
 
+        // Define el viewport para cubrir todo el canvas.
         self.gl.viewport(
             0,
             0,
@@ -167,6 +181,18 @@ impl Graphics {
             self.canvas.height() as i32,
         );
 
+        // Un *uniform* es una variable global definida en el shader GLSL que el programa WebGL puede asignar desde la CPU.
+        // A diferencia de los atributos que cambian por cada vértice, los uniforms permanecen constantes para todos los vértices o fragmentos
+        // de una misma llamada de dibujo ("draw call"). Esto permite enviar datos que no varían dentro de un frame,
+        // como matrices de transformación, tiempos, resoluciones, o parámetros de efectos.
+
+        // En este código, los uniforms se usan para:
+        // - u_matrix: para transformar las posiciones de los vértices al espacio de recorte (clip space).
+        // - u_now: para pasar el tiempo actual, usado para animaciones en el shader.
+        // - u_resolution: para informar al shader sobre el tamaño del área de dibujo, útil para efectos dependientes de resolución.
+        // - u_mode: para controlar modos de renderizado (por ejemplo, efecto CRT).
+
+        // Configura los vértices para dibujar el rectángulo.
         let a_position = box_vertex_position(&self.gl, &self.program)?;
 
         let clip_width = IMAGE.width() as f32 / self.canvas.width() as f32 * 2.0;
@@ -179,6 +205,7 @@ impl Graphics {
         self.gl
             .uniform_matrix3fv_with_f32_array(Some(&u_matrix_loc.unwrap()), false, &clip);
 
+        // Envía el tiempo actual fraccional para animaciones en el shader.
         let u_now_loc = self
             .gl
             .get_uniform_location(&self.program, "u_now")
@@ -189,6 +216,7 @@ impl Graphics {
 
         self.gl.uniform1f(Some(&u_now_loc), fractional);
 
+        // Envía la resolución del buffer de dibujo para cálculos en el shader.
         let u_resolution_loc = self
             .gl
             .get_uniform_location(&self.program, "u_resolution")
@@ -199,6 +227,7 @@ impl Graphics {
 
         self.gl.uniform2f(Some(&u_resolution_loc), width, height);
 
+        // Envía el modo de renderizado.
         let u_mode_loc = self
             .gl
             .get_uniform_location(&self.program, "u_mode")
@@ -206,7 +235,7 @@ impl Graphics {
 
         self.gl.uniform1i(Some(&u_mode_loc), mode as i32);
 
-        // texture
+        // Configuración de textura
 
         self.gl
             .pixel_storei(WebGlRenderingContext::UNPACK_ALIGNMENT, 1);
@@ -217,6 +246,7 @@ impl Graphics {
         self.gl
             .bind_texture(WebGlRenderingContext::TEXTURE_2D, Some(&texture));
 
+        // Carga la imagen cargada en memoria como textura WebGL
         self.gl
             .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
                 WebGlRenderingContext::TEXTURE_2D,
@@ -259,7 +289,7 @@ impl Graphics {
 
         self.gl.uniform1i(Some(&u_image.unwrap()), 0);
 
-        // render
+        // Dibuja el rectángulo (dos triángulos) usando los vértices y textura.
         self.gl.draw_arrays(WebGlRenderingContext::TRIANGLES, 0, 6);
 
         self.gl.disable_vertex_attrib_array(a_position);

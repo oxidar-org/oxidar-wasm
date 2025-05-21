@@ -42,6 +42,8 @@ pub enum WebError {
     LoadTexture(JsValue),
 }
 
+// Implementa la conversión automática del tipo `WebError` a `JsValue`.
+// Esto permite retornar errores Rust a JavaScript.
 impl From<WebError> for JsValue {
     fn from(err: WebError) -> Self {
         JsValue::from_str(&err.to_string())

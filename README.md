@@ -1,12 +1,93 @@
-# Rust + React
+# JS + Rust + WebAssembly
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este proyecto combina **JavaScript**, **Rust** y **WebAssembly (Wasm)**. Usa [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) para compilar código Rust a WebAssembly, que luego puede ser usado desde JavaScript.
 
-Currently, two official plugins are available:
+## Requisitos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Antes de empezar, necesitás tener instaladas algunas herramientas básicas:
 
-## Expanding the ESLint configuration
+### 1. Instalar Rust
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Seguí las instrucciones oficiales en:
+
+👉 [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
+
+Después de instalar, verificá que Rust esté disponible:
+
+```bash
+rustc --version
+```
+
+### 2. Instalar wasm-pack
+
+`wasm-pack` es una herramienta oficial para compilar proyectos Rust a WebAssembly.
+
+Seguí las instrucciones oficiales en:
+
+👉 [https://rustwasm.github.io/wasm-pack/installer](https://rustwasm.github.io/wasm-pack/installer)
+
+Después de instalar, verificá que esté wasm-pack esté disponible:
+
+```bash
+wasm-pack --version
+```
+
+### 3. Instalar Node.js y npm
+
+Este proyecto usa JavaScript, así que necesitás tener Node.js y su gestor de paquetes npm:
+
+* Recomendado: instalar desde [https://nodejs.org/](https://nodejs.org/)
+* O usando un gestor de versiones como [nvm](https://github.com/nvm-sh/nvm):
+
+Verificá que estén instalados:
+
+```bash
+node -v
+npm -v
+```
+
+---
+
+## Estructura del Proyecto
+
+```
+.
+├── rust/               # Código fuente en Rust
+├── js/                 # Proyecto JavaScript
+│   └── src/
+│       └── wasm/       # Paquete generado por wasm-pack
+├── build.sh            # Script para compilar Rust a Wasm
+```
+
+---
+
+## Cómo ejecutar el Proyecto
+
+### Linux & macOS
+
+1. Asegurate de que tenés todos los requisitos instalados.
+2. Abrí una terminal en la raíz del proyecto.
+3. Ejecutá el script `build.sh`:
+
+    ```bash
+    sh build.sh
+    ```
+
+    El script `build.sh`:
+
+    * Compila el código Rust ubicado en la carpeta `rust/`.
+    * Genera un package WebAssembly.
+    * Coloca los archivos generados en `js/src/wasm/`.
+
+4. Compilá y ejecutá el proyecto JavaScript:
+
+```bash
+cd js
+npm install
+npm run dev
+```
+---
+
+## Licencia
+
+MIT

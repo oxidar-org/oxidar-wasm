@@ -39,6 +39,7 @@ function App() {
       <canvas id="canvas" width={275} height={200} onClick={() => {
         wasm?.toggleMode();
       }} />
+      <h2>Hacé click sobre Ferris.</h2>
     </>
   )
 }

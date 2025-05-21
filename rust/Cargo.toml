@@ -16,8 +16,8 @@ console_error_panic_hook = "0.1.7" # Envia los WASM panics a console.error de Ja
 js-sys = "0.3.77" # Bindings para interactuar con la API de JavaScript.
 wasm-bindgen = "0.2.100" # Interconexion entre Rust y JavaScript
 thiserror = "1.0.50"
-image = "0.25.6"
 once_cell = "1.18.0"
+image = "0.25.6"
 
 [dependencies.web-sys]
 version = "0.3.69"
@@ -32,6 +32,3 @@ features = [
     "WebGlTexture",
     "WebGlUniformLocation",
 ]
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3.50"
